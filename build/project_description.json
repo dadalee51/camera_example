@@ -1,7 +1,7 @@
 {
     "version":            "1.2",
     "project_name":       "camera_example",
-    "project_version":    "1",
+    "project_version":    "d6c9cf2-dirty",
     "project_path":       "/home/qq/Documents/github/camera_example",
     "idf_path":           "/home/qq/esp/v5.4.2/esp-idf",
     "build_dir":          "/home/qq/Documents/github/camera_example/build",
@@ -513,14 +513,14 @@
             "target": "___idf_esp_psram",
             "prefix": "idf",
             "dir": "/home/qq/esp/v5.4.2/esp-idf/components/esp_psram",
-            "type": "CONFIG_ONLY",
+            "type": "LIBRARY",
             "lib": "__idf_esp_psram",
             "reqs": [],
             "priv_reqs": [ "heap", "spi_flash", "esp_mm" ],
             "managed_reqs": [],
             "managed_priv_reqs": [],
-            "file": "",
-            "sources": [],
+            "file": "/home/qq/Documents/github/camera_example/build/esp-idf/esp_psram/libesp_psram.a",
+            "sources": [ "/home/qq/esp/v5.4.2/esp-idf/components/esp_psram/esp_psram.c", "/home/qq/esp/v5.4.2/esp-idf/components/esp_psram/mmu_psram_flash.c", "/home/qq/esp/v5.4.2/esp-idf/components/esp_psram/esp32s3/esp_psram_impl_octal.c" ],
             "include_dirs": [ "include" ]
         },
         "esp_ringbuf": {
@@ -745,7 +745,7 @@
             "managed_reqs": [],
             "managed_priv_reqs": [],
             "file": "/home/qq/Documents/github/camera_example/build/esp-idf/newlib/libnewlib.a",
-            "sources": [ "/home/qq/esp/v5.4.2/esp-idf/components/newlib/abort.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/assert.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/heap.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/flockfile.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/locks.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/poll.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/pthread.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/random.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/getentropy.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/reent_init.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/newlib_init.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/syscalls.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/termios.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/stdatomic.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/time.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/sysconf.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/realpath.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/scandir.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/port/esp_time_impl.c" ],
+            "sources": [ "/home/qq/esp/v5.4.2/esp-idf/components/newlib/abort.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/assert.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/heap.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/flockfile.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/locks.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/poll.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/pthread.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/random.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/getentropy.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/reent_init.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/newlib_init.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/syscalls.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/termios.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/stdatomic.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/time.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/sysconf.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/realpath.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/scandir.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/port/xtensa/stdatomic_s32c1i.c", "/home/qq/esp/v5.4.2/esp-idf/components/newlib/port/esp_time_impl.c" ],
             "include_dirs": [ "platform_include" ]
         },
         "nvs_flash": {

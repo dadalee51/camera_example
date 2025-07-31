@@ -339,6 +339,7 @@
 /home/qq/Documents/github/camera_example/build/esp-idf/nvs_flash/CMakeFiles/install.dir
 /home/qq/Documents/github/camera_example/build/esp-idf/nvs_flash/CMakeFiles/install/local.dir
 /home/qq/Documents/github/camera_example/build/esp-idf/nvs_flash/CMakeFiles/install/strip.dir
+/home/qq/Documents/github/camera_example/build/esp-idf/esp_psram/CMakeFiles/__idf_esp_psram.dir
 /home/qq/Documents/github/camera_example/build/esp-idf/esp_psram/CMakeFiles/edit_cache.dir
 /home/qq/Documents/github/camera_example/build/esp-idf/esp_psram/CMakeFiles/rebuild_cache.dir
 /home/qq/Documents/github/camera_example/build/esp-idf/esp_psram/CMakeFiles/list_install_components.dir
