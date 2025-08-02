@@ -1,5 +1,8 @@
 /**
- * This example takes a picture every 5s and print its size on serial monitor.
+ * ESP32 Camera WebRTC Streaming Server
+ * 
+ * This application creates an HTTPS server that streams camera video
+ * to web browsers using WebSocket over HTTPS.
  */
 
 // =============================== SETUP ======================================
@@ -11,22 +14,9 @@
 #define BOARD_ESP32S3_GOOUUU
 
 /**
- * 2. Kconfig setup
- *
- * If you have a Kconfig file, copy the content from
- *  https://github.com/espressif/esp32-camera/blob/master/Kconfig into it.
- * In case you haven't, copy and paste this Kconfig file inside the src directory.
- * This Kconfig file has definitions that allows more control over the camera and
- * how it will be initialized.
- */
-
-/**
- * 3. Enable PSRAM on sdkconfig:
- *
- * CONFIG_ESP32_SPIRAM_SUPPORT=y
- *
- * More info on
- * https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/kconfig.html#config-esp32-spiram-support
+ * 2. WiFi Configuration:
+ * Configure your WiFi credentials in menuconfig:
+ * Component config → Camera WebRTC → WiFi SSID and Password
  */
 
 // ================================ CODE ======================================
@@ -39,6 +29,7 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/queue.h"
 
 // support IDF 5.x
 #ifndef portTICK_RATE_MS
@@ -46,6 +37,8 @@
 #endif
 
 #include "esp_camera.h"
+#include "wifi_manager.h"
+#include "web_server.h"
 
 // WROVER-KIT PIN Map
 #ifdef BOARD_WROVER_KIT
@@ -130,7 +123,7 @@
 #define CAM_PIN_D6 17
 #define CAM_PIN_D7 16
 #endif
-static const char *TAG = "example:take_picture";
+static const char *TAG = "camera_stream_server";
 
 #if ESP_CAMERA_SUPPORTED
 static camera_config_t camera_config = {
@@ -180,24 +173,81 @@ static esp_err_t init_camera(void)
 }
 #endif
 
+static void camera_streaming_task(void *pvParameters)
+{
+    camera_fb_t *fb = NULL;
+    
+    ESP_LOGI(TAG, "Starting camera streaming task");
+    
+    while (1) {
+        fb = esp_camera_fb_get();
+        if (!fb) {
+            ESP_LOGE(TAG, "Camera capture failed");
+            vTaskDelay(100 / portTICK_RATE_MS);
+            continue;
+        }
+
+        esp_err_t ret = broadcast_frame(fb->buf, fb->len);
+        if (ret != ESP_OK) {
+            ESP_LOGD(TAG, "Failed to broadcast frame: %s", esp_err_to_name(ret));
+        }
+
+        esp_camera_fb_return(fb);
+        
+        vTaskDelay(33 / portTICK_RATE_MS);
+    }
+}
+
 void app_main(void)
 {
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(ret);
+
 #if ESP_CAMERA_SUPPORTED
-    if(ESP_OK != init_camera()) {
+    ESP_LOGI(TAG, "Initializing camera...");
+    if (init_camera() != ESP_OK) {
+        ESP_LOGE(TAG, "Camera initialization failed");
+        return;
+    }
+    ESP_LOGI(TAG, "Camera initialized successfully");
+
+    ESP_LOGI(TAG, "Initializing WiFi...");
+    ret = wifi_init_sta();
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "WiFi initialization failed: %s", esp_err_to_name(ret));
         return;
     }
 
-    while (1)
-    {
-        ESP_LOGI(TAG, "Taking picture...");
-        camera_fb_t *pic = esp_camera_fb_get();
-
-        // use pic->buf to access the image
-        ESP_LOGI(TAG, "Picture taken! Its size was: %zu bytes", pic->len);
-        esp_camera_fb_return(pic);
-
-        vTaskDelay(100 / portTICK_RATE_MS);
+    ESP_LOGI(TAG, "Waiting for WiFi connection...");
+    ret = wifi_wait_for_connection(30000);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to connect to WiFi: %s", esp_err_to_name(ret));
+        return;
     }
+    ESP_LOGI(TAG, "WiFi connected successfully");
+
+    ESP_LOGI(TAG, "Starting HTTPS server...");
+    ret = start_webserver();
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to start web server: %s", esp_err_to_name(ret));
+        return;
+    }
+    ESP_LOGI(TAG, "HTTPS server started successfully");
+
+    ESP_LOGI(TAG, "=== ESP32 Camera Stream Server Ready ===");
+    ESP_LOGI(TAG, "Connect to: https://[ESP32_IP_ADDRESS]");
+    ESP_LOGI(TAG, "Accept the self-signed certificate warning in your browser");
+
+    xTaskCreate(camera_streaming_task, "camera_streaming", 4096, NULL, 5, NULL);
+
+    while (1) {
+        vTaskDelay(1000 / portTICK_RATE_MS);
+    }
+    
 #else
     ESP_LOGE(TAG, "Camera support is not available for this chip");
     return;

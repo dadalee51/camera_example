@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Camera Stream</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            background-color: #000;
+        }
+        
+        #videoStream {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        
+        .btn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.connecting {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .info h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .stat-item {
+            background-color: white;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+        }
+        
+        .stat-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎥 ESP32 Camera Live Stream</h1>
+        
+        <div class="video-container">
+            <img id="videoStream" alt="Camera stream will appear here" />
+        </div>
+        
+        <div class="controls">
+            <button id="connectBtn" class="btn">Connect</button>
+            <button id="disconnectBtn" class="btn" disabled>Disconnect</button>
+        </div>
+        
+        <div id="status" class="status disconnected">Disconnected</div>
+        
+        <div class="info">
+            <h3>📊 Stream Statistics</h3>
+            <div class="stats">
+                <div class="stat-item">
+                    <div id="frameCount" class="stat-value">0</div>
+                    <div class="stat-label">Frames Received</div>
+                </div>
+                <div class="stat-item">
+                    <div id="frameRate" class="stat-value">0</div>
+                    <div class="stat-label">FPS</div>
+                </div>
+                <div class="stat-item">
+                    <div id="dataReceived" class="stat-value">0</div>
+                    <div class="stat-label">Data (KB)</div>
+                </div>
+                <div class="stat-item">
+                    <div id="connectionTime" class="stat-value">--</div>
+                    <div class="stat-label">Connected For</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info">
+            <h3>ℹ️ Instructions</h3>
+            <p>1. Click "Connect" to start the video stream</p>
+            <p>2. Make sure your ESP32 is connected to WiFi</p>
+            <p>3. This page uses WebSocket over HTTPS for secure streaming</p>
+            <p>4. If you see certificate warnings, accept them (self-signed certificate)</p>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let frameCount = 0;
+        let totalDataReceived = 0;
+        let lastFrameTime = 0;
+        let frameRate = 0;
+        let connectionStartTime = null;
+        let connectionTimeInterval = null;
+
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const status = document.getElementById('status');
+        const videoStream = document.getElementById('videoStream');
+        const frameCountEl = document.getElementById('frameCount');
+        const frameRateEl = document.getElementById('frameRate');
+        const dataReceivedEl = document.getElementById('dataReceived');
+        const connectionTimeEl = document.getElementById('connectionTime');
+
+        function updateStatus(message, className) {
+            status.textContent = message;
+            status.className = `status ${className}`;
+        }
+
+        function updateStats() {
+            frameCountEl.textContent = frameCount;
+            frameRateEl.textContent = frameRate.toFixed(1);
+            dataReceivedEl.textContent = (totalDataReceived / 1024).toFixed(1);
+        }
+
+        function updateConnectionTime() {
+            if (connectionStartTime) {
+                const elapsed = Math.floor((Date.now() - connectionStartTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                connectionTimeEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }
+
+        function connect() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                return;
+            }
+
+            updateStatus('Connecting...', 'connecting');
+            connectBtn.disabled = true;
+
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+            
+            ws = new WebSocket(wsUrl);
+            ws.binaryType = 'arraybuffer';
+
+            ws.onopen = function(event) {
+                console.log('WebSocket connected');
+                updateStatus('Connected', 'connected');
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+                connectionStartTime = Date.now();
+                connectionTimeInterval = setInterval(updateConnectionTime, 1000);
+            };
+
+            ws.onmessage = function(event) {
+                if (event.data instanceof ArrayBuffer) {
+                    const blob = new Blob([event.data], {type: 'image/jpeg'});
+                    const url = URL.createObjectURL(blob);
+                    
+                    // Update video stream
+                    if (videoStream.src) {
+                        URL.revokeObjectURL(videoStream.src);
+                    }
+                    videoStream.src = url;
+
+                    // Update statistics
+                    frameCount++;
+                    totalDataReceived += event.data.byteLength;
+                    
+                    const now = Date.now();
+                    if (lastFrameTime > 0) {
+                        const timeDiff = (now - lastFrameTime) / 1000;
+                        frameRate = frameRate * 0.9 + (1 / timeDiff) * 0.1; // Moving average
+                    }
+                    lastFrameTime = now;
+                    
+                    updateStats();
+                }
+            };
+
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+                updateStatus('Connection Error', 'disconnected');
+            };
+
+            ws.onclose = function(event) {
+                console.log('WebSocket closed:', event.code, event.reason);
+                updateStatus('Disconnected', 'disconnected');
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                
+                if (connectionTimeInterval) {
+                    clearInterval(connectionTimeInterval);
+                    connectionTimeInterval = null;
+                }
+                connectionStartTime = null;
+                connectionTimeEl.textContent = '--';
+                
+                // Clear video stream
+                if (videoStream.src) {
+                    URL.revokeObjectURL(videoStream.src);
+                    videoStream.src = '';
+                }
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        connectBtn.addEventListener('click', connect);
+        disconnectBtn.addEventListener('click', disconnect);
+
+        // Auto-connect on page load
+        window.addEventListener('load', function() {
+            setTimeout(connect, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+export IDF_PATH='/home/qq/esp/v5.4.2/esp-idf' 
+'/home/qq/.espressif/python_env/idf5.4_py3.12_env/bin/python' '/home/qq/esp/v5.4.2/esp-idf/tools/idf_monitor.py' -p /dev/ttyACM0 -b 115200 --toolchain-prefix xtensa-esp32s3-elf- --make ''/home/qq/.espressif/python_env/idf5.4_py3.12_env/bin/python' '/home/qq/esp/v5.4.2/esp-idf/tools/idf.py'' --target esp32s3 '/home/qq/Documents/github/camera_example/build/camera_example.elf' 
